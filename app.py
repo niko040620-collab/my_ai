@@ -38,10 +38,12 @@ def run_scroll_to_bottom():
 load_dotenv()
 
 # 读取 DeepSeek API Key
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_KEY = st.secrets.get("DEEPSEEK_API_KEY")
 if not DEEPSEEK_API_KEY:
-    st.error("❌ 未找到 DeepSeek API Key，请在项目根目录创建 .env 文件并填写 DEEPSEEK_API_KEY")
-    st.stop()  # 停止执行，避免后续调用失败
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+    if not DEEPSEEK_API_KEY:
+        st.error("❌ 未找到 DeepSeek API Key，请在 .env 或 Streamlit Cloud Secrets 中设置")
+        st.stop()
 
 # 初始化 OpenAI 客户端（全局，后续直接使用）
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
