@@ -220,6 +220,7 @@ with st.sidebar:
             st.session_state.current_session_id = None
             st.session_state.editing_index = -1
             st.session_state.user_avatar = None
+            st.session_state.system_prompt = "你是一位乐于助人的中文助手，回答要条理清晰、温文尔雅、内容详实。"  # 重置为默认系统提示词
             st.session_state.assistant_avatar = None
             st.rerun()
 
