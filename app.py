@@ -173,7 +173,7 @@ with st.sidebar:
         
         # 深思模式
         st.session_state.thinking_mode = st.checkbox(
-            "🔮 启用深思模式 (Chain of Thought)",
+            "启用深思模式 (Chain of Thought)",
             value=st.session_state.get("thinking_mode", False),
             help="打开后，模型会展示内部推理过程。注意：开启后下方温度和Top P调节将无效。"
         )
