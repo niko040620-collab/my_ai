@@ -358,114 +358,114 @@ with st.sidebar:
         except Exception as e:
             st.error(f"❌ 读取文件失败：{e}")
     # 加载已有会话
-_load_all_sessions()
-if st.session_state.all_sessions:
-    session_options = {f"{sid} ({data.get('timestamp', '未知时间')})": sid for sid, data in st.session_state.all_sessions.items()}
-    selected_label = st.selectbox("加载历史对话", list(session_options.keys()), key="load_session_select")
-    selected_sid = session_options[selected_label]
-    
-    col_load, col_del = st.columns(2)
-    with col_load:
-        if st.button("📂 加载选中对话", use_container_width=True):
-            file_path = os.path.join(st.session_state.sessions_dir, f"{selected_sid}.json")
-            with open(file_path, "r", encoding="utf-8") as f:
-                session_data = json.load(f)
-            st.session_state.current_messages = session_data["messages"]
-            st.session_state.current_session_id = session_data["id"]
-            st.session_state.system_prompt = session_data.get("system_prompt", st.session_state.system_prompt)
-            st.session_state.editing_index = -1
-            st.session_state.user_avatar = session_data.get("user_avatar", None)
-            st.session_state.assistant_avatar = session_data.get("assistant_avatar", None)
-            st.success(f"已加载对话：{selected_sid}")
-            st.rerun()
-    
-    with col_del:
-        # 删除按钮
-        if st.button("🗑️ 删除选中对话", use_container_width=True):
-            st.session_state.confirm_delete_sid = selected_sid
-            st.rerun()
-    
-    # 处理删除确认
-    if st.session_state.confirm_delete_sid is not None:
-        sid_to_delete = st.session_state.confirm_delete_sid
-        # 显示确认警告框
-        st.warning(f"⚠️ 确定要永久删除对话「{sid_to_delete}」吗？此操作不可恢复。")
-        col_confirm, col_cancel = st.columns(2)
-        with col_confirm:
-            if st.button("✅ 确认删除", key="confirm_delete_yes"):
-                file_path = os.path.join(st.session_state.sessions_dir, f"{sid_to_delete}.json")
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                        st.success(f"已删除对话：{sid_to_delete}")
-                        # 如果删除的是当前正在使用的会话，则清空当前界面
-                        if st.session_state.current_session_id == sid_to_delete:
-                            st.session_state.current_messages = []
-                            st.session_state.current_session_id = None
-                            st.session_state.user_avatar = None
-                            st.session_state.assistant_avatar = None
-                        # 刷新会话列表
-                        _load_all_sessions()
+    _load_all_sessions()
+    if st.session_state.all_sessions:
+        session_options = {f"{sid} ({data.get('timestamp', '未知时间')})": sid for sid, data in st.session_state.all_sessions.items()}
+        selected_label = st.selectbox("加载历史对话", list(session_options.keys()), key="load_session_select")
+        selected_sid = session_options[selected_label]
+        
+        col_load, col_del = st.columns(2)
+        with col_load:
+            if st.button("📂 加载选中对话", use_container_width=True):
+                file_path = os.path.join(st.session_state.sessions_dir, f"{selected_sid}.json")
+                with open(file_path, "r", encoding="utf-8") as f:
+                    session_data = json.load(f)
+                st.session_state.current_messages = session_data["messages"]
+                st.session_state.current_session_id = session_data["id"]
+                st.session_state.system_prompt = session_data.get("system_prompt", st.session_state.system_prompt)
+                st.session_state.editing_index = -1
+                st.session_state.user_avatar = session_data.get("user_avatar", None)
+                st.session_state.assistant_avatar = session_data.get("assistant_avatar", None)
+                st.success(f"已加载对话：{selected_sid}")
+                st.rerun()
+        
+        with col_del:
+            # 删除按钮
+            if st.button("🗑️ 删除选中对话", use_container_width=True):
+                st.session_state.confirm_delete_sid = selected_sid
+                st.rerun()
+        
+        # 处理删除确认
+        if st.session_state.confirm_delete_sid is not None:
+            sid_to_delete = st.session_state.confirm_delete_sid
+            # 显示确认警告框
+            st.warning(f"⚠️ 确定要永久删除对话「{sid_to_delete}」吗？此操作不可恢复。")
+            col_confirm, col_cancel = st.columns(2)
+            with col_confirm:
+                if st.button("✅ 确认删除", key="confirm_delete_yes"):
+                    file_path = os.path.join(st.session_state.sessions_dir, f"{sid_to_delete}.json")
+                    try:
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            st.success(f"已删除对话：{sid_to_delete}")
+                            # 如果删除的是当前正在使用的会话，则清空当前界面
+                            if st.session_state.current_session_id == sid_to_delete:
+                                st.session_state.current_messages = []
+                                st.session_state.current_session_id = None
+                                st.session_state.user_avatar = None
+                                st.session_state.assistant_avatar = None
+                            # 刷新会话列表
+                            _load_all_sessions()
+                            st.session_state.confirm_delete_sid = None
+                            st.rerun()
+                        else:
+                            st.error("文件不存在，可能已被删除")
+                            st.session_state.confirm_delete_sid = None
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"删除失败：{e}")
                         st.session_state.confirm_delete_sid = None
                         st.rerun()
-                    else:
-                        st.error("文件不存在，可能已被删除")
-                        st.session_state.confirm_delete_sid = None
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"删除失败：{e}")
+            with col_cancel:
+                if st.button("❌ 取消", key="confirm_delete_no"):
                     st.session_state.confirm_delete_sid = None
                     st.rerun()
-        with col_cancel:
-            if st.button("❌ 取消", key="confirm_delete_no"):
-                st.session_state.confirm_delete_sid = None
-                st.rerun()
-    st.header("🎨 自定义头像")
-    
-    # 用户头像上传
-    user_avatar_file = st.file_uploader("上传用户头像", type=["png", "jpg", "jpeg", "gif"], key="user_avatar_uploader")
-    if not hasattr(st.session_state, '_last_user_avatar_id'):
-        st.session_state._last_user_avatar_id = None
-    if user_avatar_file is not None:
-    # 生成当前文件的唯一标识（文件名+大小+修改时间，足够了）
-        file_id = f"{user_avatar_file.name}_{user_avatar_file.size}"
-        if file_id != st.session_state._last_user_avatar_id:
-            st.session_state._last_user_avatar_id = file_id
-            new_avatar = image_to_base64(user_avatar_file)
-            if new_avatar:
-                st.session_state.user_avatar = new_avatar
-                st.success("用户头像已更新")
-                st.rerun()
-    
-    # 助手头像上传
-    assistant_avatar_file = st.file_uploader("上传助手头像", type=["png", "jpg", "jpeg", "gif"], key="assistant_avatar_uploader")
-    if not hasattr(st.session_state, '_last_assistant_avatar_id'):
-        st.session_state._last_assistant_avatar_id = None
-    if assistant_avatar_file is not None:
-        file_id = f"{assistant_avatar_file.name}_{assistant_avatar_file.size}"
-        if file_id != st.session_state._last_assistant_avatar_id:
-            st.session_state._last_assistant_avatar_id = file_id
-            new_avatar = image_to_base64(assistant_avatar_file)
-            if new_avatar:
-                st.session_state.assistant_avatar = new_avatar
-                st.success("助手头像已更新")
-                st.rerun()
-    
-    # 显示当前头像预览
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**当前用户头像**")
-        if st.session_state.user_avatar:
-            st.image(st.session_state.user_avatar, width=80)
-        else:
-            st.info("未自定义")
-    with col2:
-        st.markdown("**当前助手头像**")
-        if st.session_state.assistant_avatar:
-            st.image(st.session_state.assistant_avatar, width=80)
-        else:
-            st.info("未自定义")
-    show_usage_info()
+        st.header("🎨 自定义头像")
+        
+        # 用户头像上传
+        user_avatar_file = st.file_uploader("上传用户头像", type=["png", "jpg", "jpeg", "gif"], key="user_avatar_uploader")
+        if not hasattr(st.session_state, '_last_user_avatar_id'):
+            st.session_state._last_user_avatar_id = None
+        if user_avatar_file is not None:
+        # 生成当前文件的唯一标识（文件名+大小+修改时间，足够了）
+            file_id = f"{user_avatar_file.name}_{user_avatar_file.size}"
+            if file_id != st.session_state._last_user_avatar_id:
+                st.session_state._last_user_avatar_id = file_id
+                new_avatar = image_to_base64(user_avatar_file)
+                if new_avatar:
+                    st.session_state.user_avatar = new_avatar
+                    st.success("用户头像已更新")
+                    st.rerun()
+        
+        # 助手头像上传
+        assistant_avatar_file = st.file_uploader("上传助手头像", type=["png", "jpg", "jpeg", "gif"], key="assistant_avatar_uploader")
+        if not hasattr(st.session_state, '_last_assistant_avatar_id'):
+            st.session_state._last_assistant_avatar_id = None
+        if assistant_avatar_file is not None:
+            file_id = f"{assistant_avatar_file.name}_{assistant_avatar_file.size}"
+            if file_id != st.session_state._last_assistant_avatar_id:
+                st.session_state._last_assistant_avatar_id = file_id
+                new_avatar = image_to_base64(assistant_avatar_file)
+                if new_avatar:
+                    st.session_state.assistant_avatar = new_avatar
+                    st.success("助手头像已更新")
+                    st.rerun()
+        
+        # 显示当前头像预览
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**当前用户头像**")
+            if st.session_state.user_avatar:
+                st.image(st.session_state.user_avatar, width=80)
+            else:
+                st.info("未自定义")
+        with col2:
+            st.markdown("**当前助手头像**")
+            if st.session_state.assistant_avatar:
+                st.image(st.session_state.assistant_avatar, width=80)
+            else:
+                st.info("未自定义")
+        show_usage_info()
 
 
 # ---------- 主界面：聊天区域 ----------
