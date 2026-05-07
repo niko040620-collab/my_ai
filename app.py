@@ -16,7 +16,6 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("🔐 访问受限")
     password_input = st.text_input("请输入访问密码", type="password")
     if st.button("验证"):
         correct_password = st.secrets.get("APP_PASSWORD", "默认密码")
