@@ -62,7 +62,22 @@ if not DEEPSEEK_API_KEY:
 # 初始化 OpenAI 客户端（全局，后续直接使用）
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
+def build_current_session_data():
+    """根据当前会话状态构建标准JSON数据（与保存格式完全一致）"""
+    # 确定会话ID：若已存在则沿用，否则用当前时间戳
+    if st.session_state.current_session_id:
+        session_id = st.session_state.current_session_id
+    else:
+        session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    return {
+        "id": session_id,
+        "messages": st.session_state.current_messages,
+        "system_prompt": st.session_state.system_prompt,
+        "timestamp": datetime.now().isoformat(),
+        "user_avatar": st.session_state.user_avatar,
+        "assistant_avatar": st.session_state.assistant_avatar
+    }
 
 
 # ---------- 初始化所有 Session State ----------
@@ -265,12 +280,6 @@ with st.sidebar:
         
             # 防止重名：如果文件已存在，追加 "_HHMMSS" 后缀
             final_id = base_id
-            counter = 1
-            while os.path.exists(os.path.join(st.session_state.sessions_dir, f"{final_id}.json")):
-                suffix = datetime.now().strftime("_%H%M%S") if counter == 1 else f"_{counter}"
-                final_id = base_id + suffix
-                counter += 1
-        
             # 更新 session ID（用于后续自动保存，如果有的话）
             st.session_state.current_session_id = final_id
         
