@@ -9,9 +9,24 @@ import base64
 from PIL import Image
 import io
 from usage_api import *
-
-import streamlit as st
 from streamlit.components.v1 import html
+
+# 检查是否已通过验证
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔐 访问受限")
+    password_input = st.text_input("请输入访问密码", type="password")
+    if st.button("验证"):
+        correct_password = st.secrets.get("APP_PASSWORD", "默认密码")
+        if password_input == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("密码错误，拒绝访问")
+    st.stop()
+
 
 def run_scroll_to_bottom():
     """改进版：寻找特定的底部锚点并滚动"""
