@@ -122,6 +122,8 @@ def init_session_state():
         st.session_state.scroll_to_bottom_needed = False
     if "scroll_counter" not in st.session_state:
         st.session_state.scroll_counter = 0
+    if "confirm_delete_sid" not in st.session_state:
+        st.session_state.confirm_delete_sid = None
 init_session_state()
 
 # ---------- 图像格式转换 ----------
@@ -299,14 +301,72 @@ with st.sidebar:
             st.success(f"对话已保存至 {file_path}")
             # 刷新会话列表
             _load_all_sessions()
+            
+    # ---------- 导出当前对话到本地 ----------
+    st.markdown("---")  # 可选分割线
+    st.subheader("💾 导入/导出对话")
 
+    # 导出按钮
+    if st.button("📥 导出当前对话为 JSON 文件", use_container_width=True, key="export_btn"):
+        if not st.session_state.current_messages:
+            st.warning("当前没有对话内容可导出")
+        else:
+            # 使用辅助函数构建标准会话数据
+            export_data = build_current_session_data()
+            # 转换为 JSON 字符串
+            json_str = json.dumps(export_data, ensure_ascii=False, indent=2)
+            # 确定文件名：优先使用会话 ID，否则用时间戳
+            file_name = f"{export_data['id']}.json"
+            # 提供下载
+            st.download_button(
+                label="📥 点击下载 JSON 文件",
+                data=json_str,
+                file_name=file_name,
+                mime="application/json",
+                key="real_download_btn"
+            )
+        # 上传并加载 JSON 对话
+    uploaded_json = st.file_uploader(
+        "📂 上传 JSON 对话文件",
+        type=["json"],
+        key="upload_session_json",
+        help="请上传之前导出的 .json 文件（格式与云端保存一致）"
+    )
+    if uploaded_json is not None:
+        # 读取并解析 JSON
+        try:
+            uploaded_data = json.load(uploaded_json)
+            # 基本格式验证
+            required_keys = ["messages", "system_prompt", "id", "timestamp", "user_avatar", "assistant_avatar"]
+            if not all(key in uploaded_data for key in required_keys):
+                st.error("❌ 文件格式不正确：缺少必要字段（messages, system_prompt, id, timestamp, user_avatar, assistant_avatar）")
+            else:
+                # 显示文件信息，并提供加载按钮
+                st.info(f"✅ 已加载文件：{uploaded_json.name}\n会话 ID：{uploaded_data['id']}\n创建时间：{uploaded_data['timestamp']}")
+                if st.button("📂 加载此对话并替换当前会话", use_container_width=True, key="load_uploaded_session"):
+                    # 替换当前会话状态
+                    st.session_state.current_messages = uploaded_data["messages"]
+                    st.session_state.current_session_id = uploaded_data["id"]
+                    st.session_state.system_prompt = uploaded_data.get("system_prompt", st.session_state.system_prompt)
+                    st.session_state.user_avatar = uploaded_data.get("user_avatar", None)
+                    st.session_state.assistant_avatar = uploaded_data.get("assistant_avatar", None)
+                    st.session_state.editing_index = -1  # 退出编辑模式
+                    st.success(f"已成功加载对话：{uploaded_data['id']}")
+                    st.rerun()
+        except json.JSONDecodeError:
+            st.error("❌ 文件不是合法的 JSON 格式")
+        except Exception as e:
+            st.error(f"❌ 读取文件失败：{e}")
     # 加载已有会话
-    _load_all_sessions()  # 从 sessions_dir 目录加载所有会话
-    if st.session_state.all_sessions:
-        session_options = {f"{sid} ({data.get('timestamp', '未知时间')})": sid for sid, data in st.session_state.all_sessions.items()}
-        selected_label = st.selectbox("加载历史对话", list(session_options.keys()))
+_load_all_sessions()
+if st.session_state.all_sessions:
+    session_options = {f"{sid} ({data.get('timestamp', '未知时间')})": sid for sid, data in st.session_state.all_sessions.items()}
+    selected_label = st.selectbox("加载历史对话", list(session_options.keys()), key="load_session_select")
+    selected_sid = session_options[selected_label]
+    
+    col_load, col_del = st.columns(2)
+    with col_load:
         if st.button("📂 加载选中对话", use_container_width=True):
-            selected_sid = session_options[selected_label]
             file_path = os.path.join(st.session_state.sessions_dir, f"{selected_sid}.json")
             with open(file_path, "r", encoding="utf-8") as f:
                 session_data = json.load(f)
@@ -318,6 +378,48 @@ with st.sidebar:
             st.session_state.assistant_avatar = session_data.get("assistant_avatar", None)
             st.success(f"已加载对话：{selected_sid}")
             st.rerun()
+    
+    with col_del:
+        # 删除按钮
+        if st.button("🗑️ 删除选中对话", use_container_width=True):
+            st.session_state.confirm_delete_sid = selected_sid
+            st.rerun()
+    
+    # 处理删除确认
+    if st.session_state.confirm_delete_sid is not None:
+        sid_to_delete = st.session_state.confirm_delete_sid
+        # 显示确认警告框
+        st.warning(f"⚠️ 确定要永久删除对话「{sid_to_delete}」吗？此操作不可恢复。")
+        col_confirm, col_cancel = st.columns(2)
+        with col_confirm:
+            if st.button("✅ 确认删除", key="confirm_delete_yes"):
+                file_path = os.path.join(st.session_state.sessions_dir, f"{sid_to_delete}.json")
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        st.success(f"已删除对话：{sid_to_delete}")
+                        # 如果删除的是当前正在使用的会话，则清空当前界面
+                        if st.session_state.current_session_id == sid_to_delete:
+                            st.session_state.current_messages = []
+                            st.session_state.current_session_id = None
+                            st.session_state.user_avatar = None
+                            st.session_state.assistant_avatar = None
+                        # 刷新会话列表
+                        _load_all_sessions()
+                        st.session_state.confirm_delete_sid = None
+                        st.rerun()
+                    else:
+                        st.error("文件不存在，可能已被删除")
+                        st.session_state.confirm_delete_sid = None
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"删除失败：{e}")
+                    st.session_state.confirm_delete_sid = None
+                    st.rerun()
+        with col_cancel:
+            if st.button("❌ 取消", key="confirm_delete_no"):
+                st.session_state.confirm_delete_sid = None
+                st.rerun()
     st.header("🎨 自定义头像")
     
     # 用户头像上传
