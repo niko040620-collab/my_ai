@@ -161,9 +161,9 @@ def _load_all_sessions():
 
 # ---------- 侧边栏：配置区域 ----------
 with st.sidebar:
-    st.header("⚙️ 配置与工具")
+    st.header("配置与工具")
 
-    with st.expander("🎛️ 高级参数调节"):
+    with st.expander("高级参数调节"):
         # 模型选择
         st.session_state.model_name = st.selectbox(
             "模型选择",
@@ -184,7 +184,7 @@ with st.sidebar:
         reasoning_disabled = not (is_pro and st.session_state.thinking_mode)
     
         reasoning_val = st.select_slider(
-            "🧠 推理深度 (reasoning_effort)",
+            "推理深度 (reasoning_effort)",
             options=reasoning_options,
             value=st.session_state.get("reasoning_effort", "medium"),
             disabled=reasoning_disabled,
@@ -195,9 +195,9 @@ with st.sidebar:
     
         # Temperature 和 Top P（思考模式下禁用）
         disabled_sliders = st.session_state.thinking_mode
-        temperature = st.slider("🌡️ Temperature", 0.0, 2.0, st.session_state.temperature, 0.1,
+        temperature = st.slider("Temperature", 0.0, 2.0, st.session_state.temperature, 0.1,
                                 disabled=disabled_sliders, help="开启深思模式后无效")
-        top_p = st.slider("🎲 Top P", 0.0, 1.0, st.session_state.top_p, 0.05,
+        top_p = st.slider("Top P", 0.0, 1.0, st.session_state.top_p, 0.05,
                           disabled=disabled_sliders, help="开启深思模式后无效")
         if not disabled_sliders:
             st.session_state.temperature = temperature
@@ -205,17 +205,17 @@ with st.sidebar:
 
 
     # ---- 5. 更换系统提示词 ----
-    with st.expander("✍️ 更换系统提示词"):
+    with st.expander("更换系统提示词"):
         new_system_prompt = st.text_area("定义AI的性格/角色", value=st.session_state.system_prompt, height=150)
-        if st.button("💾 应用新提示词"):
+        if st.button("应用新提示词"):
             st.session_state.system_prompt = new_system_prompt
             st.success("系统提示词已更新！")
             st.rerun()
 
     # ---- 会话管理（全功能折叠面板）----
-    with st.expander("📁 会话管理", expanded=True):
+    with st.expander("会话管理", expanded=True):
         # 新建对话按钮
-        if st.button("✨ 新建对话", use_container_width=True):
+        if st.button("新建对话", use_container_width=True):
             st.session_state.current_messages = []
             st.session_state.current_session_id = None
             st.session_state.editing_index = -1
@@ -225,14 +225,14 @@ with st.sidebar:
             st.rerun()
 
         st.session_state.custom_save_filename = st.text_input(
-            "📝 自定义保存文件名（不含扩展名）",
+            "自定义保存文件名（不含扩展名）",
             value=st.session_state.custom_save_filename,
             placeholder="留空则使用时间戳自动生成",
             key="save_filename_input"
         )
 
         # 保存当前对话到本地 JSON 文件
-        if st.button("💾 保存当前对话", use_container_width=True):
+        if st.button("保存当前对话", use_container_width=True):
             if not st.session_state.current_messages:
                 st.warning("没有内容可保存")
             else:
@@ -268,10 +268,10 @@ with st.sidebar:
         st.divider()   # 分割线：区分保存与导入导出
 
         # ----- 导入/导出子区域 -----
-        st.subheader("💾 导入/导出对话")
+        st.subheader("导入/导出对话")
 
         # 导出按钮
-        if st.button("📥 导出当前对话为 JSON 文件", use_container_width=True, key="export_btn"):
+        if st.button("导出当前对话为 JSON 文件", use_container_width=True, key="export_btn"):
             if not st.session_state.current_messages:
                 st.warning("当前没有对话内容可导出")
             else:
@@ -279,7 +279,7 @@ with st.sidebar:
                 json_str = json.dumps(export_data, ensure_ascii=False, indent=2)
                 file_name = f"{export_data['id']}.json"
                 st.download_button(
-                    label="📥 点击下载 JSON 文件",
+                    label="点击下载 JSON 文件",
                     data=json_str,
                     file_name=file_name,
                     mime="application/json",
@@ -288,7 +288,7 @@ with st.sidebar:
 
         # 上传 JSON 文件
         uploaded_json = st.file_uploader(
-            "📂 上传 JSON 对话文件",
+            "上传 JSON 对话文件",
             type=["json"],
             key="upload_session_json",
             help="请上传之前导出的 .json 文件（格式与云端保存一致）"
@@ -298,10 +298,10 @@ with st.sidebar:
                 uploaded_data = json.load(uploaded_json)
                 required_keys = ["messages", "system_prompt", "id", "timestamp", "user_avatar", "assistant_avatar"]
                 if not all(key in uploaded_data for key in required_keys):
-                    st.error("❌ 文件格式不正确：缺少必要字段（messages, system_prompt, id, timestamp, user_avatar, assistant_avatar）")
+                    st.error("文件格式不正确：缺少必要字段（messages, system_prompt, id, timestamp, user_avatar, assistant_avatar）")
                 else:
-                    st.info(f"✅ 已加载文件：{uploaded_json.name}\n会话 ID：{uploaded_data['id']}\n创建时间：{uploaded_data['timestamp']}")
-                    if st.button("📂 加载此对话并替换当前会话", use_container_width=True, key="load_uploaded_session"):
+                    st.info(f"已加载文件：{uploaded_json.name}\n会话 ID：{uploaded_data['id']}\n创建时间：{uploaded_data['timestamp']}")
+                    if st.button("加载此对话并替换当前会话", use_container_width=True, key="load_uploaded_session"):
                         st.session_state.current_messages = uploaded_data["messages"]
                         st.session_state.current_session_id = uploaded_data["id"]
                         st.session_state.system_prompt = uploaded_data.get("system_prompt", st.session_state.system_prompt)
@@ -311,14 +311,14 @@ with st.sidebar:
                         st.success(f"已成功加载对话：{uploaded_data['id']}")
                         st.rerun()
             except json.JSONDecodeError:
-                st.error("❌ 文件不是合法的 JSON 格式")
+                st.error("文件不是合法的 JSON 格式")
             except Exception as e:
-                st.error(f"❌ 读取文件失败：{e}")
+                st.error(f"读取文件失败：{e}")
 
         st.divider()   # 分割线：区分导入导出与云端会话管理
 
         # ----- 云端会话管理（加载已有会话）-----
-        st.subheader("☁️ 云端会话管理")
+        st.subheader("云端会话管理")
         _load_all_sessions()
         if st.session_state.all_sessions:
             session_options = {f"{sid} ({data.get('timestamp', '未知时间')})": sid for sid, data in st.session_state.all_sessions.items()}
@@ -327,7 +327,7 @@ with st.sidebar:
             
             col_load, col_del = st.columns(2)
             with col_load:
-                if st.button("📂 加载选中对话", use_container_width=True):
+                if st.button("加载选中对话", use_container_width=True):
                     file_path = os.path.join(st.session_state.sessions_dir, f"{selected_sid}.json")
                     with open(file_path, "r", encoding="utf-8") as f:
                         session_data = json.load(f)
@@ -341,17 +341,17 @@ with st.sidebar:
                     st.rerun()
             
             with col_del:
-                if st.button("🗑️ 删除选中对话", use_container_width=True):
+                if st.button("删除选中对话", use_container_width=True):
                     st.session_state.confirm_delete_sid = selected_sid
                     st.rerun()
             
             # 删除确认处理
             if st.session_state.confirm_delete_sid is not None:
                 sid_to_delete = st.session_state.confirm_delete_sid
-                st.warning(f"⚠️ 确定要永久删除对话「{sid_to_delete}」吗？此操作不可恢复。")
+                st.warning(f"确定要永久删除对话「{sid_to_delete}」吗？此操作不可恢复。")
                 col_confirm, col_cancel = st.columns(2)
                 with col_confirm:
-                    if st.button("✅ 确认删除", key="confirm_delete_yes"):
+                    if st.button("确认", key="confirm_delete_yes"):
                         file_path = os.path.join(st.session_state.sessions_dir, f"{sid_to_delete}.json")
                         try:
                             if os.path.exists(file_path):
@@ -374,14 +374,14 @@ with st.sidebar:
                             st.session_state.confirm_delete_sid = None
                             st.rerun()
                 with col_cancel:
-                    if st.button("❌ 取消", key="confirm_delete_no"):
+                    if st.button("取消", key="confirm_delete_no"):
                         st.session_state.confirm_delete_sid = None
                         st.rerun()
         else:
             st.info("暂无云端保存的对话，请先保存当前对话。")
     
     # ---- 自定义头像 ----
-    with st.expander("🎨 自定义头像", expanded=False):
+    with st.expander("自定义头像", expanded=False):
         # 用户头像上传
         user_avatar_file = st.file_uploader("上传用户头像", type=["png", "jpg", "jpeg", "gif"], key="user_avatar_uploader")
         if not hasattr(st.session_state, '_last_user_avatar_id'):
@@ -426,13 +426,13 @@ with st.sidebar:
                 st.info("未自定义")
     # ---- 余额监控（独立区域，亦可放入 expander）----
     st.divider()  # 可选的分隔线
-    with st.expander("💰 余额监控", expanded=False):
+    with st.expander("余额监控", expanded=False):
         # 第一行：余额数值与刷新按钮
         col1, col2 = st.columns([3, 1])
         with col1:
             st.markdown("**账户余额**")
         with col2:
-            if st.button("🔄 刷新", key="refresh_balance_sidebar", use_container_width=True):
+            if st.button("刷新", key="refresh_balance_sidebar", use_container_width=True):
                 st.cache_data.clear()
                 st.rerun()
         
@@ -578,7 +578,7 @@ with chat_container:
                     st.caption(f"⚡ 本次消耗：输入 {usage['input_tokens']} / 输出 {usage['output_tokens']} Tokens")
                 # 1. 先显示推理过程（折叠块，默认折叠）
                 if "reasoning" in msg and msg["reasoning"]:
-                    with st.expander("💭 思考过程", expanded = True):
+                    with st.expander("思考过程", expanded = True):
                         st.markdown(
                             f"<div style='color: #A1A1AA;'>{msg['reasoning']}</div>", 
                             unsafe_allow_html=True
@@ -617,7 +617,7 @@ def _generate_ai_response():
     # 在聊天区域创建一个助手消息容器
     with st.chat_message("assistant", avatar=st.session_state.assistant_avatar):
         # 推理过程 expander 和最终回复占位符
-        with st.expander("💭 思考过程", expanded=False):
+        with st.expander("思考过程", expanded=False):
             reasoning_placeholder = st.empty()
         content_placeholder = st.empty()
 
@@ -669,7 +669,7 @@ def _generate_ai_response():
             st.session_state.current_messages.append(assistant_msg)
 
         except Exception as e:
-            error_msg = f"⚠️ API 调用失败：{e}"
+            error_msg = f"API 调用失败：{e}"
             content_placeholder.markdown(error_msg)
             st.session_state.current_messages.append({"role": "assistant", "content": error_msg})
 
@@ -691,7 +691,7 @@ else:
     # 编辑模式：显示禁用的输入框，提示用户先完成编辑
     st.text_area(
         label="",
-        value="⛔ 当前正在编辑消息，请先点击「确认重新发送」或「取消编辑」",
+        value="当前正在编辑消息，请先点击「确认重新发送」或「取消编辑」",
         disabled=True,
         height=40,
         label_visibility="collapsed",
@@ -704,13 +704,13 @@ if st.session_state.editing_index != -1:
     original_msg = st.session_state.current_messages[st.session_state.editing_index]
     with st.chat_message("user", avatar=st.session_state.user_avatar):
         st.markdown('<span class="user-marker"></span>', unsafe_allow_html=True)
-        edited_text = st.text_area("✏️ 编辑你的消息后，点击下方按钮重新发送",
+        edited_text = st.text_area("编辑你的消息后，点击下方按钮重新发送",
                                    value=st.session_state.edit_text,
                                    key="edit_text_area",
                                    height=100)
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ 重新发送", key="confirm_edit", use_container_width=True):
+            if st.button("重新发送", key="confirm_edit", use_container_width=True):
                 st.session_state.current_messages = st.session_state.current_messages[:st.session_state.editing_index]
                 edited_text = st.session_state.edit_text
                 st.session_state.current_messages.append({"role": "user", "content": edited_text})
@@ -720,7 +720,7 @@ if st.session_state.editing_index != -1:
                 run_scroll_to_bottom()
                 st.rerun()
         with col2:
-            if st.button("❌ 取消编辑", key="cancel_edit", use_container_width=True):
+            if st.button("取消编辑", key="cancel_edit", use_container_width=True):
                 st.session_state.editing_index = -1
                 st.session_state.edit_text = ""
                 run_scroll_to_bottom()
