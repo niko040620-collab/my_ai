@@ -124,6 +124,10 @@ def init_session_state():
         st.session_state.scroll_counter = 0
     if "confirm_delete_sid" not in st.session_state:
         st.session_state.confirm_delete_sid = None
+    if "user_avatar_version" not in st.session_state:
+        st.session_state.user_avatar_version = 0
+    if "assistant_avatar_version" not in st.session_state:
+        st.session_state.assistant_avatar_version = 0        
 init_session_state()
 
 # ---------- 图像格式转换 ----------
@@ -382,35 +386,41 @@ with st.sidebar:
     
     # ---- 自定义头像 ----
     with st.expander("自定义头像", expanded=False):
-        # 用户头像上传
-        user_avatar_file = st.file_uploader("上传用户头像", type=["png", "jpg", "jpeg", "gif"], key="user_avatar_uploader")
-        if not hasattr(st.session_state, '_last_user_avatar_id'):
-            st.session_state._last_user_avatar_id = None
+        # --- 用户头像 ---
+        st.markdown("**用户头像**")
+        user_key = f"user_avatar_uploader_{st.session_state.user_avatar_version}"
+        user_avatar_file = st.file_uploader(
+            "上传新头像 (png/jpg/jpeg/gif)",
+            type=["png", "jpg", "jpeg", "gif"],
+            key=user_key,
+            label_visibility="collapsed"
+        )
         if user_avatar_file is not None:
-            file_id = f"{user_avatar_file.name}_{user_avatar_file.size}"
-            if file_id != st.session_state._last_user_avatar_id:
-                st.session_state._last_user_avatar_id = file_id
-                new_avatar = image_to_base64(user_avatar_file)
-                if new_avatar:
-                    st.session_state.user_avatar = new_avatar
-                    st.success("用户头像已更新")
-                    st.rerun()
-        
-        # 助手头像上传
-        assistant_avatar_file = st.file_uploader("上传助手头像", type=["png", "jpg", "jpeg", "gif"], key="assistant_avatar_uploader")
-        if not hasattr(st.session_state, '_last_assistant_avatar_id'):
-            st.session_state._last_assistant_avatar_id = None
+            new_avatar = image_to_base64(user_avatar_file)
+            if new_avatar:
+                st.session_state.user_avatar = new_avatar
+                st.session_state.user_avatar_version += 1   # 改变 key，强制重置组件
+                st.success("用户头像已更新")
+                st.rerun()
+    
+        # --- 助手头像 ---
+        st.markdown("**助手头像**")
+        assistant_key = f"assistant_avatar_uploader_{st.session_state.assistant_avatar_version}"
+        assistant_avatar_file = st.file_uploader(
+            "上传新头像 (png/jpg/jpeg/gif)",
+            type=["png", "jpg", "jpeg", "gif"],
+            key=assistant_key,
+            label_visibility="collapsed"
+        )
         if assistant_avatar_file is not None:
-            file_id = f"{assistant_avatar_file.name}_{assistant_avatar_file.size}"
-            if file_id != st.session_state._last_assistant_avatar_id:
-                st.session_state._last_assistant_avatar_id = file_id
-                new_avatar = image_to_base64(assistant_avatar_file)
-                if new_avatar:
-                    st.session_state.assistant_avatar = new_avatar
-                    st.success("助手头像已更新")
-                    st.rerun()
-        
-        # 显示当前头像预览
+            new_avatar = image_to_base64(assistant_avatar_file)
+            if new_avatar:
+                st.session_state.assistant_avatar = new_avatar
+                st.session_state.assistant_avatar_version += 1
+                st.success("助手头像已更新")
+                st.rerun()
+    
+        # --- 显示当前头像预览（与之前相同）---
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("**当前用户头像**")
@@ -418,12 +428,22 @@ with st.sidebar:
                 st.image(st.session_state.user_avatar, width=80)
             else:
                 st.info("未自定义")
+            # 可选：添加清除按钮
+            if st.button("清除用户头像", key="clear_user_avatar"):
+                st.session_state.user_avatar = None
+                st.session_state.user_avatar_version += 1  # 强制重置 uploader
+                st.rerun()
+    
         with col2:
             st.markdown("**当前助手头像**")
             if st.session_state.assistant_avatar:
                 st.image(st.session_state.assistant_avatar, width=80)
             else:
                 st.info("未自定义")
+            if st.button("清除助手头像", key="clear_assistant_avatar"):
+                st.session_state.assistant_avatar = None
+                st.session_state.assistant_avatar_version += 1
+                st.rerun()
     # ---- 余额监控（独立区域，亦可放入 expander）----
     st.divider()  # 可选的分隔线
     with st.expander("余额监控", expanded=False):
@@ -558,6 +578,7 @@ with chat_container:
 
                 if st.button("✏️", key=f"edit_btn_{i}", help="编辑消息", disabled=is_editing_now):
                     st.session_state.editing_index = i
+                    st.session_state.edit_text = msg["content"]
                     st.session_state.edit_text = msg["content"]
                     run_scroll_to_bottom() # <--- 这里确保调用
                     st.rerun()
@@ -712,7 +733,7 @@ if st.session_state.editing_index != -1:
         with col1:
             if st.button("重新发送", key="confirm_edit", use_container_width=True):
                 st.session_state.current_messages = st.session_state.current_messages[:st.session_state.editing_index]
-                edited_text = st.session_state.edit_text
+                edited_text = st.session_state.edit_text_area
                 st.session_state.current_messages.append({"role": "user", "content": edited_text})
                 st.session_state.pending_ai_request = edited_text
                 st.session_state.editing_index = -1
@@ -722,6 +743,8 @@ if st.session_state.editing_index != -1:
         with col2:
             if st.button("取消编辑", key="cancel_edit", use_container_width=True):
                 st.session_state.editing_index = -1
+                if "edit_text_area" in st.session_state:
+                    del st.session_state.edit_text_area
                 st.session_state.edit_text = ""
                 run_scroll_to_bottom()
                 st.rerun()
